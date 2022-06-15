@@ -5,7 +5,7 @@
     "type": "library",
     "keywords": [
         "ghostwriter",
-        "wip"
+        "draft"
     ],
     "authors": [
         {
@@ -30,35 +30,31 @@
         }
     ],
     "require": {
-        "php": ">=8.0, <8.2",
-        "ghostwriter/container": "^0.3",
-        "ghostwriter/event-dispatcher": "^0.1"
+        "php": ">=8.0,<8.2",
+        "ghostwriter/container": "^0.4",
+        "ghostwriter/event-dispatcher": "^0.3"
     },
     "require-dev": {
+        "nikic/php-parser": "^4.14.0",
         "phpbench/phpbench": "^1.2.5",
         "phpunit/phpunit": "^9.5.20",
         "psalm/plugin-phpunit": "^0.16.1",
         "rector/rector": "^0.12.23",
-        "roave/infection-static-analysis-plugin": "^1.18.0",
+        "roave/infection-static-analysis-plugin": "^1.19.0",
         "roave/security-advisories": "dev-latest",
-        "symplify/easy-coding-standard": "^10.2.6",
+        "symplify/easy-coding-standard": "^10.2.8",
         "vimeo/psalm": "^4.23.0"
     },
-    "replace": {},
     "minimum-stability": "stable",
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Ghostwriter\\wip\\": "src/"
-        },
-        "files": [
-            "src/constants.php",
-            "src/functions.php"
-        ]
+            "Ghostwriter\\Draft\\": "src/"
+        }
     },
     "autoload-dev": {
         "psr-4": {
-            "Ghostwriter\\wip\\Tests\\": "tests/"
+            "Ghostwriter\\Draft\\Tests\\": "tests/"
         }
     },
     "config": {
