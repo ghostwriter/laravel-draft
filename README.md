@@ -8,18 +8,23 @@
 
 work in progress
 
+> **Warning**
+>
+> This project is not finished yet, work in progress.
+
+
 ## Installation
 
 You can install the package via composer:
 
 ``` bash
-composer require ghostwriter/draft
+composer require ghostwriter/draft --dev
 ```
 
 ## Usage
 
 ```php
-// wip
+// work in progress
 ```
 
 ## Testing
@@ -36,21 +41,9 @@ Please see [CHANGELOG.md](./CHANGELOG.md) for more information what has changed 
 
 If you discover any security related issues, please email `nathanael.esayeas@protonmail.com` instead of using the issue tracker.
 
-## Sponsors
+## Support
 
-[![ghostwriter's GitHub Sponsors](https://img.shields.io/github/sponsors/ghostwriter?label=Sponsors&logo=GitHub%20Sponsors)](https://github.com/sponsors/ghostwriter)
-
-Maintaining open source software is a thankless, time-consuming job.
-
-Sponsorships are one of the best ways to contribute to the long-term sustainability of an open-source licensed project.
-
-Please consider giving back, to fund the continued development of `ghostwriter/draft`, by sponsoring me here on GitHub.
-
-[[Become a GitHub Sponsor](https://github.com/sponsors/ghostwriter)]
-
-### For Developers
-
-Please consider helping your company become a GitHub Sponsor, to support the open-source licensed project that runs your business.
+[[`Become a GitHub Sponsor`](https://github.com/sponsors/ghostwriter)]
 
 ## Credits
 
