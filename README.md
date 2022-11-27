@@ -6,7 +6,7 @@
 [![Latest Version on Packagist](https://badgen.net/packagist/v/ghostwriter/draft)](https://packagist.org/packages/ghostwriter/draft)
 [![Downloads](https://badgen.net/packagist/dt/ghostwriter/draft?color=blue)](https://packagist.org/packages/ghostwriter/draft)
 
-work in progress
+A code generation tool for Laravel developers.
 
 > **Warning**
 >
