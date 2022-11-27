@@ -64,6 +64,9 @@
         "classmap-authoritative": true,
         "discard-changes": true,
         "optimize-autoloader": true,
+        "platform": {
+            "php": "8.0.99"
+        },
         "preferred-install": "dist",
         "prepend-autoloader": true,
         "process-timeout": 5000,
