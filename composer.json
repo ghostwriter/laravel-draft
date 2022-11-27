@@ -1,11 +1,12 @@
 {
-    "name": "ghostwriter/wip",
-    "description": "Here be dragons",
+    "name": "ghostwriter/draft",
+    "description": "A code generation tool for Laravel developers.",
     "license": "BSD-3-Clause",
     "type": "library",
     "keywords": [
         "ghostwriter",
-        "draft"
+        "draft",
+        "laravel"
     ],
     "authors": [
         {
@@ -31,15 +32,18 @@
     ],
     "require": {
         "php": ">=8.0,<8.2",
-        "ghostwriter/container": "^0.6.0",
-        "ghostwriter/event-dispatcher": "^0.4.2"
+        "ghostwriter/container": "^1.1",
+        "ghostwriter/event-dispatcher": "^1.1",
+        "illuminate/support": "^9.0"
     },
     "require-dev": {
+        "nunomaduro/larastan": "^2.2",
+        "orchestra/testbench": "^7.14",
         "phpunit/phpunit": "^9.5",
-        "psalm/plugin-phpunit": "^0.17.0",
-        "rector/rector": "^0.14.2",
+        "psalm/plugin-phpunit": "^0.18",
+        "rector/rector": "^0.14",
         "symplify/easy-coding-standard": "^11.1",
-        "vimeo/psalm": "^4.27"
+        "vimeo/psalm": "^4.30"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
@@ -64,6 +68,16 @@
         "prepend-autoloader": true,
         "process-timeout": 5000,
         "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "aliases": {
+                "Draft": "Ghostwriter\\Draft\\DraftFacade"
+            },
+            "providers": [
+                "Ghostwriter\\Draft\\DraftServiceProvider"
+            ]
+        }
     },
     "scripts": {
         "cache:clear": [
@@ -94,6 +108,7 @@
         "missing-returntypes": "psalm --alter --issues=MissingReturnType",
         "normalizer": "composer normalize --no-check-lock",
         "phpbench": "phpbench run",
+        "phpstan": "vendor/bin/phpstan",
         "phpunit": "phpunit --colors=always --testdox --stop-on-failure",
         "psalm": "@psalm:shepherd",
         "psalm:baseline": "psalm --set-baseline=psalm-baseline.xml",
