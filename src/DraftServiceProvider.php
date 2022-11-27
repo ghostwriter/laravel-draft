@@ -55,7 +55,7 @@ final class DraftServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/draft.php', 'draft');
 
         // Register the main class to use with the facade
-        $this->app->singleton(Draft::class, static fn () => new Draft());
+        $this->app->singleton(Draft::class, static fn (): Draft => new Draft());
         $this->app->alias(Draft::class, 'draft');
     }
 }
