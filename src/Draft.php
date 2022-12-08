@@ -7,6 +7,12 @@ namespace Ghostwriter\Draft;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 
 final class Draft
@@ -22,7 +28,69 @@ final class Draft
     private array $tables = [];
 
     /**
-     * @param Closure(Model,Blueprint):Blueprint $param
+     * @param Closure(Model, Controller):Controller $param
+     *
+     */
+    public function controller(Model $model, Closure $param): Controller
+    {
+        $controller = new class() extends Controller {
+            use AuthorizesRequests;
+            use DispatchesJobs;
+            use ValidatesRequests;
+        };
+
+        $controller->middleware([
+            new class($model, $param) {
+                public function __construct(
+                    private Model $model,
+                    private Closure $param
+                ) {}
+
+                /**
+                 * Handle an incoming request.
+                 */
+                public function handle(Request $request, Closure $next): mixed
+                {
+                    dd($request, $next);
+                    return $next($request);
+                }
+
+                /**
+                 * Handle tasks after the response has been sent to the browser.
+                 */
+                public function terminate(Request $request, Response $response): void
+                {
+                    unset($request, $response);
+                }
+            },
+        ]);
+        // (Request $request, Model $model)
+        //        'index' => 'viewAny',
+        //            'create' => 'create',
+        //            'store' => 'create',
+
+        //            'show' => 'view',
+        //            'edit' => 'update',
+        //            'update' => 'update',
+        //            'destroy' => 'delete',
+
+        var_dump([$controller]);
+
+        return $controller;
+    }
+
+    public function getModels(): array
+    {
+        return $this->models;
+    }
+
+    public function getTables(): array
+    {
+        return $this->tables;
+    }
+
+    /**
+     * @param Closure(Model,Blueprint):void $param
      */
     public function migration(Model $model, Closure $param): void
     {
@@ -33,10 +101,7 @@ final class Draft
     }
 
     /**
-     * @param string $modelName
      * @param Closure(Model):Model $param
-     *
-     * @return Model
      */
     public function model(string $modelName, Closure $param): Model
     {
@@ -44,17 +109,13 @@ final class Draft
         $tableName = Str::of($modelName)->plural()->lower()->toString();
         return $this->models[$name] = $param(new class() extends Model {
             protected $table = '';
+
             protected $dateFormat = 'U';
+
+            public function getForeignKey(): string
+            {
+                return Str::of($this->table)->singular()->snake() . '_' . $this->getKeyName();
+            }
         })->setTable($tableName);
-    }
-
-    public function getTables(): array
-    {
-        return $this->tables;
-    }
-
-    public function getModels(): array
-    {
-        return $this->models;
     }
 }
