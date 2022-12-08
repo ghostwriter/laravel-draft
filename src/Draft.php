@@ -5,117 +5,135 @@ declare(strict_types=1);
 namespace Ghostwriter\Draft;
 
 use Closure;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Illuminate\Foundation\Validation\ValidatesRequests;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Routing\Controller;
+use Ghostwriter\Draft\Contract\ControllerInterface;
+use Ghostwriter\Draft\Contract\DraftInterface;
+use Ghostwriter\Draft\Contract\ModelInterface;
+use Ghostwriter\Draft\Value\Controller;
+use Ghostwriter\Draft\Value\Migration;
+use Ghostwriter\Draft\Value\Model;
+use Ghostwriter\Draft\Value\Router;
+use Illuminate\Container\Container;
+use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Str;
 
-final class Draft
+final class Draft implements DraftInterface
 {
-    /**
-     * @var array<string,Model>
-     */
+    /** @var array<string,Controller> */
+    private array $controllers = [];
+
+    /** @var array<string,bool> */
+    private array $factories = [];
+
+    /** @var array<string,Migration> */
+    private array $migrations = [];
+
+    /** @var array<string,Model> */
     private array $models = [];
 
-    /**
-     * @var array<string,Blueprint>
-     */
-    private array $tables = [];
+    /** @var array<string,bool> */
+    private array $seeders = [];
 
-    /**
-     * @param Closure(Model, Controller):Controller $param
-     *
-     */
-    public function controller(Model $model, Closure $param): Controller
-    {
-        $controller = new class() extends Controller {
-            use AuthorizesRequests;
-            use DispatchesJobs;
-            use ValidatesRequests;
-        };
-
-        $controller->middleware([
-            new class($model, $param) {
-                public function __construct(
-                    private Model $model,
-                    private Closure $param
-                ) {}
-
-                /**
-                 * Handle an incoming request.
-                 */
-                public function handle(Request $request, Closure $next): mixed
-                {
-                    dd($request, $next);
-                    return $next($request);
-                }
-
-                /**
-                 * Handle tasks after the response has been sent to the browser.
-                 */
-                public function terminate(Request $request, Response $response): void
-                {
-                    unset($request, $response);
-                }
-            },
-        ]);
-        // (Request $request, Model $model)
-        //        'index' => 'viewAny',
-        //            'create' => 'create',
-        //            'store' => 'create',
-
-        //            'show' => 'view',
-        //            'edit' => 'update',
-        //            'update' => 'update',
-        //            'destroy' => 'delete',
-
-        var_dump([$controller]);
-
-        return $controller;
+    public function __construct(
+        private Dispatcher $dispatcher,
+        private Container $container
+    ) {
     }
 
-    public function getModels(): array
+    public function controller(Model $model, Closure $fn): void
+    {
+        $this->controllers[$model->name()] = $fn(
+            $model,
+            new Controller($model),
+            new Router($this->dispatcher, $this->container)
+        );
+    }
+
+    public function controllers(): array
+    {
+        return $this->controllers;
+    }
+
+    public function factories(): array
+    {
+        return $this->factories;
+    }
+
+    public function factory(Model ...$models): void
+    {
+        foreach ($models as $model) {
+            $tableName = $model->getTable();
+            if (! array_key_exists($tableName, $this->factories)) {
+                $this->factories[$tableName] = true;
+            }
+        }
+    }
+
+    public function hasController(ControllerInterface $controller): bool
+    {
+        return array_key_exists($controller->getModel()->name(), $this->controllers);
+    }
+
+    public function hasFactory(ModelInterface $model): bool
+    {
+        return array_key_exists($model->getTable(), $this->factories);
+    }
+
+    public function hasMigration(ModelInterface $model): bool
+    {
+        return array_key_exists($model->getTable(), $this->migrations);
+    }
+
+    public function hasModel(ModelInterface $model): bool
+    {
+        return array_key_exists(self::modelName($model), $this->models);
+    }
+
+    public function hasSeeder(ModelInterface $model): bool
+    {
+        return array_key_exists($model->getTable(), $this->seeders);
+    }
+
+    public function migration(Model $model, Closure $fn): void
+    {
+        $tableName = $model->getTable();
+        $this->migrations[$tableName] = $fn($model, new Migration($tableName));
+    }
+
+    public function migrations(): array
+    {
+        return $this->migrations;
+    }
+
+    public function model(string $modelName, Closure $fn): Model
+    {
+        $model = $fn(new Model($modelName));
+
+        return $this->models[self::modelName($model)] = $model;
+    }
+
+    public function models(): array
     {
         return $this->models;
     }
 
-    public function getTables(): array
+    public function seeder(Model ...$models): void
     {
-        return $this->tables;
-    }
-
-    /**
-     * @param Closure(Model,Blueprint):void $param
-     */
-    public function migration(Model $model, Closure $param): void
-    {
-        $tableName = $model->getTable();
-
-        $this->tables[$tableName] =
-            new Blueprint($tableName, static fn (Blueprint $blueprint): mixed => $param($model, $blueprint));
-    }
-
-    /**
-     * @param Closure(Model):Model $param
-     */
-    public function model(string $modelName, Closure $param): Model
-    {
-        $name = Str::of($modelName)->singular()->ucfirst()->toString();
-        $tableName = Str::of($modelName)->plural()->lower()->toString();
-        return $this->models[$name] = $param(new class() extends Model {
-            protected $table = '';
-
-            protected $dateFormat = 'U';
-
-            public function getForeignKey(): string
-            {
-                return Str::of($this->table)->singular()->snake() . '_' . $this->getKeyName();
+        foreach ($models as $model) {
+            $tableName = $model->getTable();
+            if (! array_key_exists($tableName, $this->seeders)) {
+                $this->seeders[$tableName] = true;
+                $this->factories[$tableName] = true;
             }
-        })->setTable($tableName);
+        }
+    }
+
+    public function seeders(): array
+    {
+        return $this->seeders;
+    }
+
+    private static function modelName(ModelInterface $model): string
+    {
+        return Str::of($model->getTable())->singular()->ucfirst()->toString();
     }
 }
