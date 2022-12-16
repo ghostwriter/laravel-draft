@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ghostwriter\Draft;
 
+use Ghostwriter\Draft\Command\InitCommand;
+use Ghostwriter\Draft\Command\TraceCommand;
 use Illuminate\Support\ServiceProvider;
 
 final class DraftServiceProvider extends ServiceProvider
@@ -42,7 +44,7 @@ final class DraftServiceProvider extends ServiceProvider
             ], 'lang');*/
 
             // Registering package commands.
-            // $this->commands([]);
+            $this->commands([InitCommand::class, TraceCommand::class]);
         }
     }
 
@@ -51,11 +53,11 @@ final class DraftServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        parent::register();
         // Automatically apply the package configuration
         $this->mergeConfigFrom(__DIR__ . '/../config/draft.php', 'draft');
 
         // Register the main class to use with the facade
-        $this->app->singleton(Draft::class, static fn (): Draft => new Draft());
-        $this->app->alias(Draft::class, 'draft');
+        $this->app->bind(Draft::class);
     }
 }
