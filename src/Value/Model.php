@@ -28,13 +28,13 @@ final class Model extends IlluminateModel implements ModelInterface
             ->toString();
     }
 
-    public function getTable(): string
-    {
-        return $this->table;
-    }
-
     public function name(): string
     {
         return $this->name;
+    }
+
+    public function table(): string
+    {
+        return $this->table;
     }
 }
