@@ -15,6 +15,10 @@ use Ghostwriter\Draft\Value\Router;
 use Illuminate\Container\Container;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Str;
+use PhpParser\Node;
+use PhpParser\ParserFactory;
+
+use function base_path;
 
 final class Draft implements DraftInterface
 {
@@ -23,6 +27,9 @@ final class Draft implements DraftInterface
 
     /** @var array<string,bool> */
     private array $factories = [];
+
+    /** @var array<string,Node> */
+    private array $files = [];
 
     /** @var array<string,Migration> */
     private array $migrations = [];
@@ -34,9 +41,17 @@ final class Draft implements DraftInterface
     private array $seeders = [];
 
     public function __construct(
+        private Container $container,
         private Dispatcher $dispatcher,
-        private Container $container
     ) {
+        $dispatcher->listen(
+            '*',
+            static fn (string $eventName, array $attribute): mixed => dump($eventName, $attribute)
+        );
+
+        # options
+        # arguments
+        # tokens
     }
 
     public function controller(Model $model, Closure $fn): void
@@ -111,9 +126,20 @@ final class Draft implements DraftInterface
         return $this->models[self::modelName($model)] = $model;
     }
 
+    public function modelPath(): string
+    {
+        return base_path('app/Models');
+    }
+
     public function models(): array
     {
         return $this->models;
+    }
+
+    public function parse(string $code, string $path): array
+    {
+        $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
+        return $this->files[basename($path, '.php')] = $parser->parse($code) ?? [];
     }
 
     public function seeder(Model ...$models): void
