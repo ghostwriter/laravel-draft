@@ -6,7 +6,7 @@ namespace Ghostwriter\Draft\Contract;
 
 interface ModelInterface
 {
-    public function getTable(): string;
-
     public function name(): string;
+
+    public function table(): string;
 }
