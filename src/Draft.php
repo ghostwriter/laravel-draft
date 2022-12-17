@@ -7,35 +7,41 @@ namespace Ghostwriter\Draft;
 use Closure;
 use Ghostwriter\Draft\Contract\ControllerInterface;
 use Ghostwriter\Draft\Contract\DraftInterface;
+use Ghostwriter\Draft\Contract\MigrationInterface;
 use Ghostwriter\Draft\Contract\ModelInterface;
+use Ghostwriter\Draft\Contract\UserInterface;
+use Ghostwriter\Draft\Exception\RuntimeException;
 use Ghostwriter\Draft\Value\Controller;
 use Ghostwriter\Draft\Value\Migration;
 use Ghostwriter\Draft\Value\Model;
-use Ghostwriter\Draft\Value\Router;
 use Illuminate\Container\Container;
+use Illuminate\Database\Eloquent\Model as IlluminateModel;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Str;
 use PhpParser\Node;
+use PhpParser\Node\Stmt;
 use PhpParser\ParserFactory;
 
 use function base_path;
 
 final class Draft implements DraftInterface
 {
-    /** @var array<string,Controller> */
+    /** @var array<string,ControllerInterface> */
     private array $controllers = [];
 
     /** @var array<string,bool> */
     private array $factories = [];
 
-    /** @var array<string,Node> */
+    /** @var array<string, array<Node|Stmt>> */
     private array $files = [];
 
-    /** @var array<string,Migration> */
+    /** @var array<string,MigrationInterface> */
     private array $migrations = [];
 
-    /** @var array<string,Model> */
-    private array $models = [];
+    /** @var array<string,ModelInterface|UserInterface> */
+    private array $models = [
+
+    ];
 
     /** @var array<string,bool> */
     private array $seeders = [];
@@ -52,15 +58,50 @@ final class Draft implements DraftInterface
         # options
         # arguments
         # tokens
+
+        // Todo: set the user UserInterface::class in models array.
+         $this->models[UserInterface::class] = new class(
+             auth()->user() ?? $this->container->get(config('draft.default.user'))
+         ) implements UserInterface {
+             public function __construct(IlluminateModel $model)
+             {
+             }
+
+             public function controller(): string
+             {
+                 return '';
+             }
+
+             public function name(): string
+             {
+                 return basename(config('draft.default.user'));
+             }
+
+             public function namespace(): string
+             {
+                 return $this->model->;
+             }
+
+             public function table(): string
+             {
+                 return Str::of($this->name())->plural()->lower()->toString();
+             }
+         };
     }
 
-    public function controller(Model $model, Closure $fn): void
+    public function controller(ModelInterface $model, Closure $factory): ControllerInterface
     {
-        $this->controllers[$model->name()] = $fn(
-            $model,
-            new Controller($model),
-            new Router($this->dispatcher, $this->container)
-        );
+        $name = $model->table();
+        if (array_key_exists($name, $this->controllers)) {
+            return $this->controllers[$name];
+        }
+
+        throw new RuntimeException(sprintf('Controller "%s" dose not exists.', $name));
+    }
+
+    public function controllerPath(): string
+    {
+        return base_path('app/Http/Controllers');
     }
 
     public function controllers(): array
@@ -73,12 +114,12 @@ final class Draft implements DraftInterface
         return $this->factories;
     }
 
-    public function factory(Model ...$models): void
+    public function factory(ModelInterface ...$models): void
     {
         foreach ($models as $model) {
-            $tableName = $model->getTable();
-            if (! array_key_exists($tableName, $this->factories)) {
-                $this->factories[$tableName] = true;
+            $table = $model->table();
+            if (! array_key_exists($table, $this->factories)) {
+                $this->factories[$table] = true;
             }
         }
     }
@@ -90,28 +131,55 @@ final class Draft implements DraftInterface
 
     public function hasFactory(ModelInterface $model): bool
     {
-        return array_key_exists($model->getTable(), $this->factories);
+        return array_key_exists($model->table(), $this->factories);
     }
 
     public function hasMigration(ModelInterface $model): bool
     {
-        return array_key_exists($model->getTable(), $this->migrations);
+        return array_key_exists($model->table(), $this->migrations);
     }
 
     public function hasModel(ModelInterface $model): bool
     {
-        return array_key_exists(self::modelName($model), $this->models);
+        return array_key_exists($model->name(), $this->models);
     }
 
     public function hasSeeder(ModelInterface $model): bool
     {
-        return array_key_exists($model->getTable(), $this->seeders);
+        return array_key_exists($model->table(), $this->seeders);
     }
 
-    public function migration(Model $model, Closure $fn): void
+    public function makeController(ModelInterface $model, ?Closure $factory = null): void
     {
-        $tableName = $model->getTable();
-        $this->migrations[$tableName] = $fn($model, new Migration($tableName));
+        $name = $model->name();
+        if (array_key_exists($name, $this->controllers)) {
+            throw new RuntimeException(sprintf('"%sController" already exists.', $name));
+        }
+
+        $factory ??= static fn(
+            DraftInterface $draft,
+            ControllerInterface $controller
+        ): ControllerInterface => $controller;
+
+        $controller = $factory($this, new Controller($model));
+        if ($controller instanceof ControllerInterface) {
+            $this->controllers[$name] = $controller->withUser($this->user());
+            return;
+        }
+
+        throw new RuntimeException(sprintf('Failed to construct a "%sController".', $name));
+    }
+
+
+    public function makeModel(string $name, ?Closure $factory = null): void
+    {
+        $modelName = Str::of($name)->singular()->ucfirst()->toString();
+        if (array_key_exists($modelName, $this->models)) {
+            throw new RuntimeException(sprintf('Model "%s" already exists.', $name));
+        }
+        $factory ??= static fn (Draft $draft, Model $model): Model => $model;
+
+        $this->models[$modelName] = $factory($this, new Model($name));
     }
 
     public function migrations(): array
@@ -119,11 +187,15 @@ final class Draft implements DraftInterface
         return $this->migrations;
     }
 
-    public function model(string $modelName, Closure $fn): Model
+    public function model(string $name): ModelInterface
     {
-        $model = $fn(new Model($modelName));
+        $modelName = Str::of($name)->singular()->ucfirst()->toString();
 
-        return $this->models[self::modelName($model)] = $model;
+        if (array_key_exists($modelName, $this->models)) {
+            return $this->models[$modelName];
+        }
+
+        throw new RuntimeException(sprintf('Model "%s" does not exist.', $name));
     }
 
     public function modelPath(): string
@@ -138,8 +210,9 @@ final class Draft implements DraftInterface
 
     public function parse(string $code, string $path): array
     {
-        $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
-        return $this->files[basename($path, '.php')] = $parser->parse($code) ?? [];
+        return $this->files[$path] ??=
+            ((new ParserFactory())->create(ParserFactory::PREFER_PHP7))->parse($code) ??
+            [];
     }
 
     public function seeder(Model ...$models): void
@@ -156,6 +229,11 @@ final class Draft implements DraftInterface
     public function seeders(): array
     {
         return $this->seeders;
+    }
+
+    public function user(): UserInterface
+    {
+        return $this->models[UserInterface::class] ?? throw new RuntimeException('User model is missing.');
     }
 
     private static function modelName(ModelInterface $model): string
