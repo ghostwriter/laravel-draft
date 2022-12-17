@@ -7,7 +7,9 @@ namespace Ghostwriter\Draft\Value\Controller;
 use Closure;
 use Ghostwriter\Draft\Contract\Controller\ActionInterface;
 use Ghostwriter\Draft\Contract\Controller\StatementInterface;
+use Ghostwriter\Draft\Contract\DraftInterface;
 use Ghostwriter\Draft\Contract\ModelInterface;
+use Ghostwriter\Draft\Contract\UserInterface;
 use Ghostwriter\Draft\Exception\RuntimeException;
 use Ghostwriter\Draft\Value\Controller\Statement\DispatchStatement;
 use Ghostwriter\Draft\Value\Controller\Statement\FireStatement;
@@ -19,12 +21,18 @@ use Ghostwriter\Draft\Value\Controller\Statement\ValidateStatement;
 
 final class Action implements ActionInterface
 {
-    /** @var array<string,StatementInterface> */
-    private array $statements = [];
+    /** @var iterable<string,StatementInterface> */
+    private iterable $statements = [];
 
+    /**
+     * @param Closure(ActionInterface):void $factory
+     */
     public function __construct(
-        private string $name
+        private string $name,
+        private Closure $factory,
+        private DraftInterface $draft
     ) {
+        ($this->factory)($this);
     }
 
     /**
@@ -94,11 +102,12 @@ final class Action implements ActionInterface
 
     public function statement(StatementInterface $statement): ActionInterface
     {
-        if (array_key_exists($statement::class, $this->statements)) {
-            throw new RuntimeException(sprintf('Statement "%s" already exists.', $statement::class));
+        $statementId = $statement->getId();
+        if (array_key_exists($statementId, $this->statements)) {
+            throw new RuntimeException(sprintf('Statement "%s" already exists.', $statementId));
         }
 
-        $this->statements[$statement::class] = $statement;
+        $this->statements[$statementId] = $statement;
 
         return $this;
     }
@@ -106,6 +115,11 @@ final class Action implements ActionInterface
     public function statements(): iterable
     {
         yield from $this->statements;
+    }
+
+    public function user(): UserInterface
+    {
+        return $this->draft->user();
     }
 
     /**
