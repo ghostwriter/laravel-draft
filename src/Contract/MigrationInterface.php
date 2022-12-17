@@ -6,4 +6,5 @@ namespace Ghostwriter\Draft\Contract;
 
 interface MigrationInterface
 {
+    public function getModel(): ModelInterface;
 }
