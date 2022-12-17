@@ -1,4 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
-return [];
+use App\Models\User;
+
+return [
+    'default' => [
+        'user' => User::class,
+    ],
+];
