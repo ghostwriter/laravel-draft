@@ -27,12 +27,12 @@ interface ControllerInterface
      */
     public function model(string $name): ModelInterface;
 
-    public function withUser(UserInterface $user): self;
-
     /**
      * @return iterable<string,ModelInterface>
      */
     public function models(): iterable;
 
     public function user(): UserInterface;
+
+    public function withUser(UserInterface $user): self;
 }
