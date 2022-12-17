@@ -7,8 +7,6 @@ namespace Ghostwriter\Draft\Action;
 use Ghostwriter\Draft\Draft;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
-use SplFileInfo;
-use Traversable;
 
 final class FindControllers
 {
