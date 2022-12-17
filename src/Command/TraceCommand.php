@@ -4,26 +4,21 @@ declare(strict_types=1);
 
 namespace Ghostwriter\Draft\Command;
 
+use Ghostwriter\Draft\Action\FindControllers;
+use Ghostwriter\Draft\Action\FindModels;
 use Ghostwriter\Draft\Draft;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use PhpParser\NodeDumper;
-use PhpParser\PrettyPrinter\Standard;
-use SplFileInfo;
 
 final class TraceCommand extends Command
 {
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Trace the full project for models';
 
     protected $signature = 'draft:trace';
 
     public function __construct(
-        private Draft $draft
+        private Draft $draft,
+        private Filesystem $filesystem
     ) {
         parent::__construct();
     }
@@ -31,40 +26,38 @@ final class TraceCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(Filesystem $filesystem): int
+    public function handle(): int
     {
-        $models = collect($filesystem->files($this->draft->modelPath()))
-            ->map(fn (
-                SplFileInfo $fileInfo
-            ): array => $this->draft->parse($filesystem->get($fileInfo->getRealPath()), $fileInfo->getFilename()));
+        $models =
+        iterator_to_array((new FindModels($this->draft, $this->filesystem))());
+        $controllers =
+        iterator_to_array((new FindControllers($this->draft, $this->filesystem))());
 
-        foreach ($models as $model) {
-            dump([
-                //                (new NodeDumper())->dump($model),
-                (new Standard())->prettyPrintFile($model),
-            ]);
-        }
+        //            $this->callSilently('queue:monitor', []);
 
-        //        dd($this->draft);
+        //        dd(app()->getNamespace());
+        //        dump([$models, $controllers]);
 
-        die;
-        $controllers = collect($filesystem->files(app()->basePath('app/http/controllers')))
-            ->map->getPathname();
+        //        return self::SUCCESS;
 
-        $formRequests = collect($filesystem->files(app()->basePath('app/http/requests')))
-            ->map->getPathname();
+        // dd($this->draft);
+        //        $controllers = collect($this->filesystem->files(app()->basePath('app/http/controllers')))
+        //            ->map->getPathname();
+        //
+        //        $formRequests = collect($this->filesystem->files(app()->basePath('app/http/requests')))
+        //            ->map->getPathname();
 
         //        $models = $filesystem->files(app()->databasePath('app/models'));
-        dump([
-            'it works!',
-            //            app()->basePath('app/models'),
-            $models,
-            $controllers,
-            $formRequests,
-            //            app()->configPath(),
-            //            app()->databasePath(),
-            //            app()->resourcePath(),
-        ]);
+        //        dump([
+        //            'it works!',
+        //            //            app()->basePath('app/models'),
+        //            $models,
+        //            $controllers,
+        //            $formRequests,
+        //            //            app()->configPath(),
+        //            //            app()->databasePath(),
+        //            //            app()->resourcePath(),
+        //        ]);
 
         return self::SUCCESS;
     }
