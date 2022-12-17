@@ -6,18 +6,36 @@ namespace Ghostwriter\Draft\Traits;
 
 trait StatementTrait
 {
+    private ?string $id = null;
+
     /**
      * @param array<string,string> $attributes
      */
     public function __construct(
         private string $name,
-        private array $attributes = []
+        private iterable $attributes = []
     ) {
     }
 
-    public function attributes(): iterable
+    public function getAttributes(): iterable
     {
         yield from $this->attributes;
+    }
+
+    public function getId(): string
+    {
+        return $this->id ??= spl_object_hash($this);
+    }
+
+    public function hasAttribute(string $key): bool
+    {
+        foreach ($this->attributes as $attributeKey => $attribute) {
+            if ($key === $attributeKey) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function name(): string
@@ -25,26 +43,21 @@ trait StatementTrait
         return $this->name;
     }
 
-    public function with(string $key, mixed $value): self
-    {
-        $this->attributes[$key] = $value;
-
-        return $this;
-    }
-
     public function withAttribute(string $key, string $value): self
     {
-        $this->attributes[$key] = $value;
+        $copy = clone $this;
+        $copy->attributes[$key] = $value;
 
-        return $this;
+        return $copy;
     }
 
-    public function withMany(iterable $attributes): self
+    public function withoutAttribute(string ...$keys): self
     {
-        foreach ($attributes as $key => $value) {
-            $this->attributes[$key] = $value;
+        $copy = clone $this;
+        foreach ($keys as $key) {
+            unset($copy->attributes[$key]);
         }
 
-        return $this;
+        return $copy;
     }
 }
