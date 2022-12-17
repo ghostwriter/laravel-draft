@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once '/Users/nathane/Desktop/GitHub/ghostwriter/draft/vendor/autoload.php';
 
+use App\Models\User;
 use Carbon\Carbon;
 use Ghostwriter\Draft\Draft;
 use Ghostwriter\Draft\Value\Controller;
@@ -24,6 +25,14 @@ return static function (Draft $draft): void {
     // ===
     //$draft = new Draft(new Dispatcher(), new Container());
     // ===
+    $user = $draft->model(User::class, static function (Model $user): Model {
+        $user->fillable(['name', 'email', 'password', 'api_key', 'ssn', 'published_at']);
+        $user->mergeCasts([
+            'published_at'=> Carbon::class,
+        ]);
+        $user->makeHidden(['password', 'api_key', 'ssn']);
+        return $user;
+    });
     //$user = $draft->model('User', static function (Model $user): Model {
     //    $user->fillable(['name', 'email', 'password', 'api_key', 'ssn', 'published_at']);
     //    $user->mergeCasts([
