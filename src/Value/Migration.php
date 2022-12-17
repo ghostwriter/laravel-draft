@@ -10,26 +10,26 @@ use Illuminate\Support\Str;
 
 final class Migration extends Blueprint implements MigrationInterface
 {
+    private ?string $foreignKey = null;
+
     public function __construct(
-        private string $name,
-        array $attributes = []
+        private Model $model
     ) {
-        $this->table = Str::of($this->name)->plural()->lower()->toString();
-        parent::__construct($attributes);
+        parent::__construct($this->model->table());
     }
 
     public function getForeignKey(): string
     {
         /** @var string $this->table */
-        return Str::of($this->table)
+        return $this->foreignKey ??= Str::of($this->table)
             ->singular()
             ->snake()
             ->append('_' . $this->getKeyName())
             ->toString();
     }
 
-    public function name(): string
+    public function getModel(): Model
     {
-        return $this->name;
+        return $this->model;
     }
 }
