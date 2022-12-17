@@ -5,18 +5,10 @@ declare(strict_types=1);
 namespace Ghostwriter\Draft\Contract;
 
 use Closure;
-use Ghostwriter\Draft\Value\Controller;
-use Ghostwriter\Draft\Value\Migration;
 use Ghostwriter\Draft\Value\Model;
-use Ghostwriter\Draft\Value\Router;
 
 interface DraftInterface
 {
-    /**
-     * @param Closure(Model,Controller,Router):Controller $fn
-     */
-    public function controller(Model $model, Closure $fn): void;
-
     public function hasController(ControllerInterface $controller): bool;
 
     public function hasFactory(ModelInterface $model): bool;
@@ -28,12 +20,26 @@ interface DraftInterface
     public function hasSeeder(ModelInterface $model): bool;
 
     /**
-     * @param Closure(Model,Migration):Migration $fn
+     * @param ?Closure(self,ControllerInterface):ControllerInterface $factory
      */
-    public function migration(Model $model, Closure $fn): void;
+    public function makeController(ModelInterface $model, ?Closure $factory = null): void;
 
     /**
-     * @param Closure(Model):Model $fn
+     * @param class-string|string                          $name
+     * @param ?Closure(self,ModelInterface):ModelInterface $factory If the model exists keep this null
      */
-    public function model(string $modelName, Closure $fn): Model;
+    public function makeModel(string $name, ?Closure $factory = null): void;
+
+    /**
+     * @param class-string|string $name
+     */
+    public function model(string $name): ModelInterface;
+
+    public function user(): UserInterface;
+
+    //$draft->controllers(),
+    //$draft->factories(),
+    //$draft->migrations(),
+    //$draft->models(),
+    //$draft->seeders(),
 }
