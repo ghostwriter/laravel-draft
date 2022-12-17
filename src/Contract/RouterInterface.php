@@ -6,4 +6,5 @@ namespace Ghostwriter\Draft\Contract;
 
 interface RouterInterface
 {
+    public function user(): UserInterface;
 }
