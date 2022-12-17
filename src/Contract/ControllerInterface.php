@@ -10,10 +10,10 @@ use Ghostwriter\Draft\Contract\Controller\ActionInterface;
 interface ControllerInterface
 {
     /**
-     * @param string                        $name  eg. 'index,create,show'
-     * @param Closure(ActionInterface):void $param
+     * @param string                        $name    eg. 'index,create,show'
+     * @param Closure(ActionInterface):void $factory
      */
-    public function action(string $name, Closure $param): void;
+    public function action(string $name, Closure $factory): void;
 
     /**
      * @return iterable<string,ActionInterface>
@@ -22,10 +22,17 @@ interface ControllerInterface
 
     public function getModel(): ModelInterface;
 
-    public function model(ModelInterface $model): void;
+    /**
+     * @param class-string<ModelInterface>|string $name
+     */
+    public function model(string $name): ModelInterface;
+
+    public function withUser(UserInterface $user): self;
 
     /**
      * @return iterable<string,ModelInterface>
      */
     public function models(): iterable;
+
+    public function user(): UserInterface;
 }
