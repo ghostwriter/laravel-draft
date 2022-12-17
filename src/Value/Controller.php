@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace Ghostwriter\Draft\Value;
 
 use Closure;
+use Ghostwriter\Draft\Contract\Controller\ActionInterface;
 use Ghostwriter\Draft\Contract\ControllerInterface;
 use Ghostwriter\Draft\Contract\ModelInterface;
+use Ghostwriter\Draft\Contract\UserInterface;
 use Ghostwriter\Draft\Exception\RuntimeException;
 use Ghostwriter\Draft\Value\Controller\Action;
 use Illuminate\Routing\Controller as IlluminateController;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router;
 
 final class Controller extends IlluminateController implements ControllerInterface
 {
-    /** @var array<string,Action> */
+    /** @var array<string,ActionInterface> */
     private array $actions = [];
 
     private bool $apiResource = false;
@@ -24,13 +27,18 @@ final class Controller extends IlluminateController implements ControllerInterfa
 
     private bool $invokable = false;
 
+    /** @var array<string,Middleware> */
+    private array $middlewares = [];
+
     /** @var array<string,Model> */
     private array $models = [];
 
     private bool $resource = false;
 
+    private ?UserInterface $user = null;
+
     public function __construct(
-        private Model $model
+        private ModelInterface $model
     ) {
         //        'index' => 'viewAny',
         //            'create' => 'create',
@@ -44,15 +52,15 @@ final class Controller extends IlluminateController implements ControllerInterfa
     }
 
     /**
-     * @param Closure(Action):Action $param
+     * @param Closure(ActionInterface):void $factory
      */
-    public function action(string $name, Closure $param): void
+    public function action(string $name, ?Closure $factory = null): void
     {
         if (array_key_exists($name, $this->actions)) {
             throw new RuntimeException(sprintf('Action "%s" already exists.', $name));
         }
 
-        $this->actions[$name] = $param(new Action($name));
+        $this->actions[$name] = new Action($name, $factory);
     }
 
     public function actions(): iterable
@@ -100,9 +108,9 @@ final class Controller extends IlluminateController implements ControllerInterfa
         return $this->resource;
     }
 
-    public function model(ModelInterface $model): void
+    public function model(string $name): ModelInterface
     {
-        $this->models[$model->name()] = $model;
+        return $this->draft->model($name);
     }
 
     public function models(): iterable
@@ -115,6 +123,16 @@ final class Controller extends IlluminateController implements ControllerInterfa
         $this->resource = true;
     }
 
+    public function user(): ModelInterface
+    {
+        $user = $this->user;
+        if ($user instanceof ModelInterface) {
+            return $user;
+        }
+
+        throw new RuntimeException('No model was provided.');
+    }
+
 //    public function route(Route $route): void
 //    {
 //        $this->router->controller($this::class);
@@ -124,4 +142,16 @@ final class Controller extends IlluminateController implements ControllerInterfa
 //        //            'posts' => PostController::class,
 //        //        ]);
 //    }
+    public function withUser(UserInterface $user): self
+    {
+        $currentUser = $this->user;
+        if (null !== $currentUser && $user === $currentUser) {
+            return $this;
+        }
+
+        $copy = clone $this;
+        $copy->user = $user;
+
+        return $copy;
+    }
 }
