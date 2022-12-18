@@ -57,10 +57,11 @@ final class Draft implements DraftInterface
         # arguments
         # tokens
 
+        $user = auth()
+            ->user() ?? $this->container->get(config('draft.default.user'));
+
         // Todo: set the user UserInterface::class in models array.
-        $this->models[UserInterface::class] = new class(auth() ->user() ?? $this->container->get(
-            config('draft.default.user')
-        )) implements UserInterface {
+        $this->models[UserInterface::class] = new class($user) implements UserInterface {
             private ?MigrationInterface $migration = null;
 
             public function __construct(IlluminateModel $model)
