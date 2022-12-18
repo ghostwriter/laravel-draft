@@ -39,9 +39,7 @@ final class Draft implements DraftInterface
     private array $migrations = [];
 
     /** @var array<string,ModelInterface|UserInterface> */
-    private array $models = [
-
-    ];
+    private array $models = [];
 
     /** @var array<string,bool> */
     private array $seeders = [];
@@ -60,33 +58,47 @@ final class Draft implements DraftInterface
         # tokens
 
         // Todo: set the user UserInterface::class in models array.
-         $this->models[UserInterface::class] = new class(
-             auth()->user() ?? $this->container->get(config('draft.default.user'))
-         ) implements UserInterface {
-             public function __construct(IlluminateModel $model)
-             {
-             }
+        $this->models[UserInterface::class] = new class(auth() ->user() ?? $this->container->get(
+            config('draft.default.user')
+        )) implements UserInterface {
+            private ?MigrationInterface $migration = null;
 
-             public function controller(): string
-             {
-                 return '';
-             }
+            public function __construct(IlluminateModel $model)
+            {
+            }
 
-             public function name(): string
-             {
-                 return basename(config('draft.default.user'));
-             }
+            public function controller(): string
+            {
+                return '';
+            }
 
-             public function namespace(): string
-             {
-                 return $this->model->;
-             }
+            public function name(): string
+            {
+                return basename(config('draft.default.user'));
+            }
 
-             public function table(): string
-             {
-                 return Str::of($this->name())->plural()->lower()->toString();
-             }
-         };
+            public function namespace(): string
+            {
+                return '';
+            }
+
+            public function table(): string
+            {
+                return Str::of($this->name())->plural()->lower()->toString();
+            }
+
+            public function migration(): MigrationInterface
+            {
+                return $this->migration ??= new Migration(new Model($this->name()));
+            }
+
+            public function withMigration(?Closure $factory = null): void
+            {
+                if ($factory instanceof Closure) {
+                    $this->migration = $factory($this->migration());
+                }
+            }
+        };
     }
 
     public function controller(ModelInterface $model, Closure $factory): ControllerInterface
@@ -156,7 +168,7 @@ final class Draft implements DraftInterface
             throw new RuntimeException(sprintf('"%sController" already exists.', $name));
         }
 
-        $factory ??= static fn(
+        $factory ??= static fn (
             DraftInterface $draft,
             ControllerInterface $controller
         ): ControllerInterface => $controller;
@@ -169,7 +181,6 @@ final class Draft implements DraftInterface
 
         throw new RuntimeException(sprintf('Failed to construct a "%sController".', $name));
     }
-
 
     public function makeModel(string $name, ?Closure $factory = null): void
     {
