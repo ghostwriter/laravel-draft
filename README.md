@@ -8,6 +8,10 @@
 
 A code generation tool for Laravel developers.
 
+> **Warning**
+>
+> This project is not finished yet, work in progress.
+
 This tool will write your draft ideas in to functional laravel code.
 
 - Automatically load existing files and database to generate missing files. (e.g. Missing Tests)
@@ -33,10 +37,6 @@ This tool will write your draft ideas in to functional laravel code.
     - Jobs
     - Events
     - RenderView
-
-> **Warning**
->
-> This project is not finished yet, work in progress.
 
 
 ## Installation
