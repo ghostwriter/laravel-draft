@@ -80,6 +80,7 @@ trait NodeVisitorTrait
 
     public function traverse(array $nodes, ?NodeTraverser $nodeTraverser = null): iterable
     {
-        yield from ($nodeTraverser ??= new NodeTraverser())->traverse($nodes);
+        yield from ($nodeTraverser ??= new NodeTraverser())
+            ->traverse($nodes);
     }
 }
