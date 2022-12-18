@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace Ghostwriter\Draft\Visitor\Traits;
 
 use PhpParser\Node;
+use PhpParser\NodeTraverser;
 
 trait NodeVisitorTrait
 {
     /**
      * Called once after traversal.
      *
-     * Return value semantics: null:      $nodes stays as-is otherwise: $nodes is set to the return value
+     * Return value semantics:
+     * - null:      $nodes stays as-is
+     * - otherwise: $nodes is set to the return value
      *
      * @param Node[] $nodes Array of nodes
      *
@@ -25,7 +28,9 @@ trait NodeVisitorTrait
     /**
      * Called once before traversal.
      *
-     * Return value semantics: null:      $nodes stays as-is otherwise: $nodes is set to the return value
+     * Return value semantics:
+     * - null: $nodes stays as-is
+     * - otherwise: $nodes is set to the return value
      *
      * @param Node[] $nodes Array of nodes
      *
@@ -71,5 +76,10 @@ trait NodeVisitorTrait
     public function leaveNode(Node $node): mixed
     {
         return null;
+    }
+
+    public function traverse(array $nodes, ?NodeTraverser $nodeTraverser = null): iterable
+    {
+        yield from ($nodeTraverser ??= new NodeTraverser())->traverse($nodes);
     }
 }
