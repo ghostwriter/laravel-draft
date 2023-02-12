@@ -13,23 +13,21 @@ use PhpParser\Node\Stmt;
 final class FindModels
 {
     /**
+     * @throws FileNotFoundException
+     *
      * @return Generator<string,array<Stmt>>
      *
-     * @throws FileNotFoundException
      */
     public function __invoke(Draft $draft, Filesystem $filesystem): Generator
     {
         foreach ($filesystem->files($draft->modelPath()) as $controller) {
             $path = $controller->getRealPath();
 
-            if ($path === false) {
+            if (false === $path) {
                 throw new FileNotFoundException();
             }
 
-            yield $path => $draft->parse(
-                $filesystem->get($path),
-                $controller->getFilename()
-            );
+            yield $path => $draft->parse($filesystem->get($path), $controller->getFilename());
         }
     }
 }
