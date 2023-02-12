@@ -19,10 +19,10 @@ This tool will write your draft ideas in to functional laravel code.
 - Jetstream with Livewire by v1.0
 
 ### Automated Features
-- Model
+- Models
 - Factories
 - Seeders
-- Migration
+- Migrations
 - Routes
 - Unit Tests (90+ code coverage by v1.0)
 - Feature Tests (90+ code coverage by v1.0)
@@ -52,18 +52,25 @@ composer require ghostwriter/draft --dev
 ### Commands
 
 create a draft file.
+
 ``` bash
 php artisan draft:init
 ```
+
 build the laravel application using the draft.php file
+
 ``` bash
 php artisan draft:build
 ```
+
 generate missing and or incomplete files along with writing feature/unit tests.
+
 ``` bash
 php artisan draft:generate
 ```
-trace the project to build an internal cache of class name and file location information.
+
+trace an existing application to build a "draft.php" file.
+
 ``` bash
 php artisan draft:trace
 ```
@@ -117,7 +124,7 @@ return static function (Draft $draft): void {
     //      redirect: post.index
     // ===
     $user = $draft->model(User::class);
-    
+
     $draft->makeModel('Post', static function (Draft $draft, Model $model): Model {
         $model->mergeCasts(['author_id'=> 'int', 'published_at'=> Carbon::class]);
         $model->fillable(['title', 'content', 'published_at']);
@@ -133,13 +140,12 @@ return static function (Draft $draft): void {
         $model->withController($post, static function (Draft $draft, Controller $controller): void {
             // $controller->resource(static fn (Action $action): Action => $action->render()->send());
             // $controller->resourceCollection(static fn (Action $action): Action => $action->render());
-            
+
             $controller->invokable('create',static fn (Action $action): Action => $action->fire('CreatePost')->render());
 
             $controller->action('create',static fn (Action $action): Action => $action->fire('CreatePost')->render());
             $controller->action('store',static fn (Action $action): Action => $action->fire('SavePost')->render());
             $controller->action('show',static fn (Action $action): Action => $action->fire('GetPost')->render());
-
 
             $controller->action(
                     'view',
@@ -158,7 +164,7 @@ return static function (Draft $draft): void {
 
         return $model;
     });
-    
+
     $post = $draft->model('Post');
     $draft->controller(
         $post,
@@ -200,7 +206,6 @@ return static function (Draft $draft): void {
                         'users' => $controller->user()
                     ]));
 
-                        
                         $action->validate(
                             'Flight',
                             static fn (ValidateStatement $validateStatement): ValidateStatement => $validateStatement
