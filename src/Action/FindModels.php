@@ -9,23 +9,16 @@ use Ghostwriter\Draft\Draft;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use PhpParser\Node;
-use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
-use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassConst;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Property;
+use PhpParser\Node\Stmt\PropertyProperty;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
-use RuntimeException;
 
 final class FindModels
 {
@@ -33,6 +26,7 @@ final class FindModels
      * @var array<Node>
      */
     private array $models = [];
+
     private NodeExtractor $nodeNameResolver;
 
     public function __construct()
@@ -61,43 +55,53 @@ final class FindModels
 
             /** @return array<Stmt> $models */
             $models = $traverser->traverse($draft->parse($filesystem->get($path), $file->getFilename()));
-            foreach ($models as $model){
+            foreach ($models as $model) {
                 /** @var array<Class_> $classes */
                 $classes = $nodeFinder->findInstanceOf($model, Class_::class);
-                foreach ($classes as $class){
+                foreach ($classes as $class) {
                     $className = NodeExtractor::getName($class);
 
-                    /** @var array<ClassConst> $constants */
-                    $constants = $nodeFinder->findInstanceOf($class, ClassConst::class);
-                    foreach ($constants as $constant){
-                        $constName = NodeExtractor::getName($constant);
-                        $constValue = NodeExtractor::getValue($constant);
+                    $this->models[$path][$className]['const'] = array_reduce(
+                        $nodeFinder->findInstanceOf($class, ClassConst::class),
+                        static fn (array $carry, ClassConst $constant): array =>
+                            array_merge($carry, NodeExtractor::getConsts($constant)),
+                        []
+                    );
 
-                        $this->models[$path][$className]['const'][$constName] = $constValue;
-                    }
+                    $this->models[$path][$className]['method'] = array_reduce(
+                        $nodeFinder->findInstanceOf($class, ClassMethod::class),
+                        static fn (array $carry, ClassMethod $method) =>
+                            array_merge(
+                                $carry,
+                                [
+                                    NodeExtractor::getName($method) => NodeExtractor::getParams($method),
+                                ]
+                            ),
+                        []
+                    );
 
-                    /** @var array<ClassMethod> $methods */
-                    $methods = $nodeFinder->findInstanceOf($class, ClassMethod::class);
-                    foreach ($methods as $method){
-                        $methodName = NodeExtractor::getName($method);
-                        $methodParams = NodeExtractor::getParams($method);
-
-                        $this->models[$path][$className]['methods'][$methodName] = $methodParams;
-                    }
-
-                    /** @var array<Property> $properties */
-                    $properties = $nodeFinder->findInstanceOf($class, Property::class);
-                    foreach ($properties as $property){
-                        foreach ($property->props as $propertyProperty) {
-                            $propertyName = NodeExtractor::getName($propertyProperty);
-                            $propertyValue = NodeExtractor::getDefault($propertyProperty);
-
-                            $this->models[$path][$className]['properties'][$propertyName] = $propertyValue;
-                        }
-                    }
+                    $this->models[$path][$className]['property'] = array_reduce(
+                        $nodeFinder->findInstanceOf($class, Property::class),
+                        static fn (array $carry, Property $property): array =>
+                            array_merge(
+                                $carry,
+                                array_reduce(
+                                    $property->props,
+                                    static fn (array $carry, PropertyProperty $property) =>
+                                        array_merge(
+                                            $carry,
+                                            [
+                                                NodeExtractor::getName($property) =>
+                                                    NodeExtractor::getDefault($property),
+                                            ]
+                                        ),
+                                    []
+                                )
+                            ),
+                        []
+                    );
                 }
             }
-
         }
 
         yield from $this->models;
@@ -109,5 +113,17 @@ final class FindModels
     public function getModels(): array
     {
         return $this->models;
+    }
+
+    public static function getProps(ClassMethod $node): array
+    {
+        return array_reduce(
+            $node->props,
+            static fn (array $carry, Param $param): array =>
+            array_merge($carry, [
+                self::getVar($param) => self::getDefault($param),
+            ]),
+            []
+        );
     }
 }
