@@ -36,10 +36,10 @@ interface DraftInterface
      */
     public function model(string $name): ModelInterface;
 
-    public function user(): UserInterface;
-
     /** @return array<Stmt> */
     public function parse(string $code, string $path): array;
+
+    public function user(): UserInterface;
 
     //$draft->controllers(),
     //$draft->factories(),
