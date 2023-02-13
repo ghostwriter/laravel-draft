@@ -4,17 +4,12 @@ declare(strict_types=1);
 
 namespace Ghostwriter\Draft\Tests\Unit;
 
-use Closure;
 use Ghostwriter\Draft\Draft;
 use Ghostwriter\Draft\DraftServiceProvider;
-use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
-use Illuminate\Events\Dispatcher;
 use Illuminate\Foundation\Application;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\Small;
-use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Draft::class)]
 #[CoversClass(DraftServiceProvider::class)]
@@ -22,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 final class DraftTest extends \Orchestra\Testbench\TestCase
 {
     private Container $container;
+
     private Draft $draft;
 
     protected function setUp(): void
@@ -30,6 +26,27 @@ final class DraftTest extends \Orchestra\Testbench\TestCase
         parent::setUp();
 
         $this->draft = $this->container->get(Draft::class);
+    }
+
+    public function testDraftControllersIsEmpty(): void
+    {
+        self::assertEmpty($this->draft->controllers());
+    }
+
+    public function testDraftFactoriesIsEmpty(): void
+    {
+        self::assertEmpty($this->draft->factories());
+    }
+
+    public function testDraftModelsIsNeverEmpty(): void
+    {
+        self::assertCount(1, $this->draft->models());
+        self::assertNotEmpty($this->draft->models());
+    }
+
+    public function testDraftSeedersIsEmpty(): void
+    {
+        self::assertEmpty($this->draft->seeders());
     }
 
     /**
@@ -49,31 +66,11 @@ final class DraftTest extends \Orchestra\Testbench\TestCase
      * Get package providers.
      *
      * @param Application $app
+     *
      * @return array<int, class-string>
      */
     protected function getPackageProviders($app)
     {
         return [DraftServiceProvider::class];
-    }
-
-
-    public function testDraftModelsIsNeverEmpty(): void
-    {
-        self::assertCount(1, $this->draft->models());
-        self::assertNotEmpty($this->draft->models());
-    }
-
-    public function testDraftControllersIsEmpty(): void
-    {
-        self::assertEmpty($this->draft->controllers());
-    }
-
-    public function testDraftFactoriesIsEmpty(): void
-    {
-        self::assertEmpty($this->draft->factories());
-    }
-    public function testDraftSeedersIsEmpty(): void
-    {
-        self::assertEmpty($this->draft->seeders());
     }
 }
