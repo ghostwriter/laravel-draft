@@ -17,7 +17,7 @@ interface ActionInterface
      */
     public function statements(): iterable;
 
-    public function with(string $key, ModelInterface $value): self;
+    public function with(string $key, ModelInterface $model): self;
 
     /**
      * @param iterable<string,ModelInterface> $param
