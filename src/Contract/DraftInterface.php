@@ -6,6 +6,7 @@ namespace Ghostwriter\Draft\Contract;
 
 use Closure;
 use Ghostwriter\Draft\Value\Model;
+use PhpParser\Node\Stmt;
 
 interface DraftInterface
 {
