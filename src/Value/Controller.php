@@ -123,14 +123,14 @@ final class Controller extends IlluminateController implements ControllerInterfa
         $this->resource = true;
     }
 
-    public function user(): ModelInterface
+    public function user(): UserInterface
     {
         $user = $this->user;
-        if ($user instanceof ModelInterface) {
+        if ($user instanceof UserInterface) {
             return $user;
         }
 
-        throw new RuntimeException('No model was provided.');
+        throw new RuntimeException('No user was provided.');
     }
 
 //    public function route(Route $route): void
