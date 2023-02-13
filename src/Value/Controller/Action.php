@@ -132,7 +132,7 @@ final class Action implements ActionInterface
         return $this;
     }
 
-    public function with(string $key, ModelInterface $value): ActionInterface
+    public function with(string $key, ModelInterface $model): ActionInterface
     {
         return $this;
     }
