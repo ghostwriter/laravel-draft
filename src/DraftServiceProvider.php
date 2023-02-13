@@ -61,13 +61,10 @@ final class DraftServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(dirname(__DIR__) . '/config/draft.php', 'draft');
 
         // Register the main class to use with the facade
-        $this->app->singleton(
-            ParserFactory::class,
-            static fn(): ParserFactory => new ParserFactory()
-        );
+        $this->app->singleton(ParserFactory::class, static fn (): ParserFactory => new ParserFactory());
         $this->app->singleton(
             Parser::class,
-            static fn(Container $container): Parser =>
+            static fn (Container $container): Parser =>
             $container->build(ParserFactory::class)->create(ParserFactory::PREFER_PHP7)
         );
         $this->app->bind(Draft::class);
