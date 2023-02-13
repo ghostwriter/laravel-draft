@@ -14,17 +14,22 @@ use Ghostwriter\Draft\Exception\RuntimeException;
 use Ghostwriter\Draft\Value\Controller;
 use Ghostwriter\Draft\Value\Migration;
 use Ghostwriter\Draft\Value\Model;
+use Ghostwriter\Draft\Value\User;
+use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Model as IlluminateModel;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitorAbstract;
+use PhpParser\Parser;
 use PhpParser\ParserFactory;
 
 use function base_path;
 
-final class Draft implements DraftInterface
+final class Draft  extends NodeVisitorAbstract implements DraftInterface
 {
     /** @var array<string,ControllerInterface> */
     private array $controllers = [];
@@ -32,7 +37,7 @@ final class Draft implements DraftInterface
     /** @var array<string,bool> */
     private array $factories = [];
 
-    /** @var array<string, array<Node|Stmt>> */
+    /** @var array<string, array<Stmt>> */
     private array $files = [];
 
     /** @var array<string,MigrationInterface> */
@@ -44,21 +49,38 @@ final class Draft implements DraftInterface
     /** @var array<string,bool> */
     private array $seeders = [];
 
+
+    /**
+     * @return array<Stmt>
+     */
+    public function parse(string $code, string $path): array
+    {
+
+        return $this->files[$path] ??=
+            $this->parser->parse($code) ?? [];
+    }
+
+    /** @noinspection ForgottenDebugOutputInspection */
     public function __construct(
-        private Container $container,
-        private Dispatcher $dispatcher,
+        private readonly Container  $container,
+        private readonly Dispatcher $dispatcher,
+        private readonly Parser $parser,
     ) {
-        $dispatcher->listen(
-            '*',
-            static fn (string $eventName, array $attribute): mixed => dump($eventName, $attribute)
-        );
+//        $dispatcher->listen(
+//            '*',
+//            static fn (string $eventName, array $attribute): mixed => dump($eventName, $attribute)
+//        );
 
         # options
         # arguments
         # tokens
 
-        $user = auth()
-            ->user() ?? $this->container->get(config('draft.default.user'));
+        /** @var string|class-string $key */
+        $key = config('draft.default.user');
+        $user = $this->container->has($key) ?
+            $this->container->get($key) :
+            new class extends IlluminateModel{};
+
 
         // Todo: set the user UserInterface::class in models array.
         $this->models[UserInterface::class] = new class($user) implements UserInterface {
@@ -66,6 +88,7 @@ final class Draft implements DraftInterface
 
             public function __construct(IlluminateModel $model)
             {
+                //
             }
 
             public function controller(): string
@@ -135,6 +158,11 @@ final class Draft implements DraftInterface
                 $this->factories[$table] = true;
             }
         }
+    }
+
+    public function getContainer(): Container
+    {
+        return $this->container;
     }
 
     public function hasController(ControllerInterface $controller): bool
@@ -212,7 +240,7 @@ final class Draft implements DraftInterface
 
     public function modelPath(): string
     {
-        return base_path('app/Models');
+        return app()->basePath('app/Models');
     }
 
     public function models(): array
@@ -220,17 +248,20 @@ final class Draft implements DraftInterface
         return $this->models;
     }
 
-    public function parse(string $code, string $path): array
-    {
-        return $this->files[$path] ??=
-            ((new ParserFactory())->create(ParserFactory::PREFER_PHP7))->parse($code) ??
-            [];
-    }
+
+//    /**
+//     * @param array<Stmt> $nodes
+//     * @return array<Node>
+//     */
+//    public function traverse(array $nodes): array
+//    {
+//        return $this->traverser->traverse($nodes);
+//    }
 
     public function seeder(Model ...$models): void
     {
         foreach ($models as $model) {
-            $tableName = $model->getTable();
+            $tableName = $model->table();
             if (! array_key_exists($tableName, $this->seeders)) {
                 $this->seeders[$tableName] = true;
                 $this->factories[$tableName] = true;
@@ -245,11 +276,34 @@ final class Draft implements DraftInterface
 
     public function user(): UserInterface
     {
-        return $this->models[UserInterface::class] ?? throw new RuntimeException('User model is missing.');
+        //        $this->container->get($this->userProviderModel());
+        return $this->models[UserInterface::class]
+            ??= new User($this->container->build($this->userProviderModel()));
+        //    ?? throw new RuntimeException('User model is missing.');
     }
 
     private static function modelName(ModelInterface $model): string
     {
-        return Str::of($model->getTable())->singular()->ucfirst()->toString();
+        return Str::of($model->table())->singular()->ucfirst()->toString();
+    }
+
+    private function userProviderModel(): string
+    {
+        /** @var Repository $config */
+        $config = $this->container->get('config');
+
+        /** @var string $guard */
+        $guard = $config->get('auth.defaults.guard');
+
+        /** @var string $provider */
+        $provider = $config->get(sprintf('auth.guards.%s.provider', $guard));
+
+        /** @return class-string<Model> $model */
+        return $config->get(sprintf('auth.providers.%s.model', $provider));
+    }
+
+    public function getDispatcher(): Dispatcher
+    {
+        return $this->dispatcher;
     }
 }
