@@ -22,14 +22,12 @@ use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Str;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
-use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Parser;
-use PhpParser\ParserFactory;
 
 use function base_path;
 
-final class Draft  extends NodeVisitorAbstract implements DraftInterface
+final class Draft extends NodeVisitorAbstract implements DraftInterface
 {
     /** @var array<string,ControllerInterface> */
     private array $controllers = [];
@@ -49,38 +47,27 @@ final class Draft  extends NodeVisitorAbstract implements DraftInterface
     /** @var array<string,bool> */
     private array $seeders = [];
 
-
-    /**
-     * @return array<Stmt>
-     */
-    public function parse(string $code, string $path): array
-    {
-
-        return $this->files[$path] ??=
-            $this->parser->parse($code) ?? [];
-    }
-
     /** @noinspection ForgottenDebugOutputInspection */
     public function __construct(
-        private readonly Container  $container,
+        private readonly Container $container,
         private readonly Dispatcher $dispatcher,
         private readonly Parser $parser,
     ) {
-//        $dispatcher->listen(
-//            '*',
-//            static fn (string $eventName, array $attribute): mixed => dump($eventName, $attribute)
-//        );
+        //        $dispatcher->listen(
+        //            '*',
+        //            static fn (string $eventName, array $attribute): mixed => dump($eventName, $attribute)
+        //        );
 
         # options
         # arguments
         # tokens
 
-        /** @var string|class-string $key */
+        /** @var class-string|string $key */
         $key = config('draft.default.user');
         $user = $this->container->has($key) ?
             $this->container->get($key) :
-            new class extends IlluminateModel{};
-
+            new class() extends IlluminateModel {
+            };
 
         // Todo: set the user UserInterface::class in models array.
         $this->models[UserInterface::class] = new class($user) implements UserInterface {
@@ -163,6 +150,11 @@ final class Draft  extends NodeVisitorAbstract implements DraftInterface
     public function getContainer(): Container
     {
         return $this->container;
+    }
+
+    public function getDispatcher(): Dispatcher
+    {
+        return $this->dispatcher;
     }
 
     public function hasController(ControllerInterface $controller): bool
@@ -248,9 +240,18 @@ final class Draft  extends NodeVisitorAbstract implements DraftInterface
         return $this->models;
     }
 
+    /**
+     * @return array<Stmt>
+     */
+    public function parse(string $code, string $path): array
+    {
+        return $this->files[$path] ??=
+            $this->parser->parse($code) ?? [];
+    }
+
 
 //    /**
-//     * @param array<Stmt> $nodes
+//     * @param array<Stmt> $models
 //     * @return array<Node>
 //     */
 //    public function traverse(array $nodes): array
@@ -300,10 +301,5 @@ final class Draft  extends NodeVisitorAbstract implements DraftInterface
 
         /** @return class-string<Model> $model */
         return $config->get(sprintf('auth.providers.%s.model', $provider));
-    }
-
-    public function getDispatcher(): Dispatcher
-    {
-        return $this->dispatcher;
     }
 }
