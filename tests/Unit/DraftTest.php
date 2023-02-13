@@ -4,19 +4,76 @@ declare(strict_types=1);
 
 namespace Ghostwriter\Draft\Tests\Unit;
 
+use Closure;
 use Ghostwriter\Draft\Draft;
+use Ghostwriter\Draft\DraftServiceProvider;
+use Illuminate\Config\Repository;
+use Illuminate\Container\Container;
+use Illuminate\Events\Dispatcher;
+use Illuminate\Foundation\Application;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\CoversFunction;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Draft::class)]
+#[CoversClass(DraftServiceProvider::class)]
 #[Small]
-final class DraftTest extends TestCase
+final class DraftTest extends \Orchestra\Testbench\TestCase
 {
-    #[CoversNothing]
-    public function test(): void
+    private Container $container;
+    private Draft $draft;
+
+    protected function setUp(): void
     {
-        self::assertTrue(true);
+        $this->container = new Container();
+        parent::setUp();
+
+        $this->draft = $this->container->get(Draft::class);
+    }
+
+    /**
+     * Define environment setup.
+     *
+     * @param Application $app
+     */
+    protected function defineEnvironment($app): void
+    {
+        $app->config->set('draft.debug', 'false');
+        $app->config->set('draft.default', [
+            'user' => '\App\Models\User',
+        ]);
+    }
+
+    /**
+     * Get package providers.
+     *
+     * @param Application $app
+     * @return array<int, class-string>
+     */
+    protected function getPackageProviders($app)
+    {
+        return [DraftServiceProvider::class];
+    }
+
+
+    public function testDraftModelsIsNeverEmpty(): void
+    {
+        self::assertCount(1, $this->draft->models());
+        self::assertNotEmpty($this->draft->models());
+    }
+
+    public function testDraftControllersIsEmpty(): void
+    {
+        self::assertEmpty($this->draft->controllers());
+    }
+
+    public function testDraftFactoriesIsEmpty(): void
+    {
+        self::assertEmpty($this->draft->factories());
+    }
+    public function testDraftSeedersIsEmpty(): void
+    {
+        self::assertEmpty($this->draft->seeders());
     }
 }
