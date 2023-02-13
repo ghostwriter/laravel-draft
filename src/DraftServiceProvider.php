@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Ghostwriter\Draft;
 
 use Ghostwriter\Draft\Command\InitCommand;
+use Ghostwriter\Draft\Command\NewCommand;
 use Ghostwriter\Draft\Command\TraceCommand;
+use Illuminate\Container\Container;
 use Illuminate\Support\ServiceProvider;
+use PhpParser\Parser;
+use PhpParser\ParserFactory;
 
 final class DraftServiceProvider extends ServiceProvider
 {
@@ -44,7 +48,7 @@ final class DraftServiceProvider extends ServiceProvider
             ], 'lang');*/
 
             // Registering package commands.
-            $this->commands([InitCommand::class, TraceCommand::class]);
+            $this->commands([InitCommand::class, NewCommand::class, TraceCommand::class]);
         }
     }
 
@@ -53,11 +57,19 @@ final class DraftServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        parent::register();
         // Automatically apply the package configuration
-        $this->mergeConfigFrom(__DIR__ . '/../config/draft.php', 'draft');
+        $this->mergeConfigFrom(dirname(__DIR__) . '/config/draft.php', 'draft');
 
         // Register the main class to use with the facade
+        $this->app->singleton(
+            ParserFactory::class,
+            static fn(): ParserFactory => new ParserFactory()
+        );
+        $this->app->singleton(
+            Parser::class,
+            static fn(Container $container): Parser =>
+            $container->build(ParserFactory::class)->create(ParserFactory::PREFER_PHP7)
+        );
         $this->app->bind(Draft::class);
     }
 }
