@@ -28,9 +28,9 @@ final class Action implements ActionInterface
      * @param Closure(ActionInterface):void $factory
      */
     public function __construct(
-        private string $name,
-        private Closure $factory,
-        private DraftInterface $draft
+        private readonly string $name,
+        private readonly Closure $factory,
+        private readonly DraftInterface $draft
     ) {
         ($this->factory)($this);
     }
