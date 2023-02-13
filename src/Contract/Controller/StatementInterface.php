@@ -6,4 +6,5 @@ namespace Ghostwriter\Draft\Contract\Controller;
 
 interface StatementInterface
 {
+    public function getId(): string;
 }
