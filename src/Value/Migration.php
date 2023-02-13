@@ -13,7 +13,7 @@ final class Migration extends Blueprint implements MigrationInterface
     private ?string $foreignKey = null;
 
     public function __construct(
-        private Model $model
+        private readonly Model $model
     ) {
         parent::__construct($this->model->table());
     }
