@@ -53,6 +53,7 @@ final class InitCommand extends Command
 
             return self::SUCCESS;
         }
+
         $this->error(sprintf('Draft file [%s] already exists!', $draftFile));
 
         return self::FAILURE;
