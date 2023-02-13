@@ -37,6 +37,9 @@ interface DraftInterface
 
     public function user(): UserInterface;
 
+    /** @return array<Stmt> */
+    public function parse(string $code, string $path): array;
+
     //$draft->controllers(),
     //$draft->factories(),
     //$draft->migrations(),
