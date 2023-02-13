@@ -23,14 +23,6 @@ final class ClassMap
     /** @var array<string, array<Node|Stmt>> */
     private array $files = [];
 
-    /** @var array<string,MigrationInterface> */
-    private array $migrations = [];
-
-    /** @var array<string,ModelInterface|UserInterface> */
-    private array $models = [];
-
-    /** @var array<string,bool> */
-    private array $seeders = [];
     private array $map =  [
         'models' => [
             'model' => [
@@ -51,6 +43,15 @@ final class ClassMap
         //        'createRequests' => [],
         //        'updateRequests' => [],
     ];
+
+    /** @var array<string,MigrationInterface> */
+    private array $migrations = [];
+
+    /** @var array<string,ModelInterface|UserInterface> */
+    private array $models = [];
+
+    /** @var array<string,bool> */
+    private array $seeders = [];
 
     public function __construct()
     {
