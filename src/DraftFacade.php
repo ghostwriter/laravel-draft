@@ -7,7 +7,7 @@ namespace Ghostwriter\Draft;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see \Ghostwriter\Draft\Draft
+ * @see Draft
  */
 final class DraftFacade extends Facade
 {
