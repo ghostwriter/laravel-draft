@@ -57,6 +57,34 @@ final class ClassMap
     {
     }
 
+    public function addClass(string $class, string $path): void
+    {
+        $map =&$this->map;
+
+        if (! array_key_exists($path, $map)) {
+            $map[$path] = [];
+        }
+
+        if (! array_key_exists($class, $map)) {
+            $map[$class] = [];
+        }
+    }
+
+    public function addClassConsts(array $constants, string $class, string $path)
+    {
+        $this->map[$path][$class]['const'] = $constants;
+    }
+
+    public function addClassMethods(array $methods, string $class, string $path): void
+    {
+        $this->map[$path][$class]['method'] = $methods;
+    }
+
+    public function addClassProperties(array $properties, string $class, string $path): void
+    {
+        $this->map[$path][$class]['property'] = $properties;
+    }
+
     public function addModel(array $info): void
     {
         $columns = [
