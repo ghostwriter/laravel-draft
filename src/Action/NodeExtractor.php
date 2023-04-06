@@ -138,6 +138,18 @@ final class NodeExtractor
         );
     }
 
+    public static function getProps(ClassMethod $node): array
+    {
+        return array_reduce(
+            $node->props,
+            static fn (array $carry, Param $param): array =>
+            array_merge($carry, [
+                self::getVar($param) => self::getDefault($param),
+            ]),
+            []
+        );
+    }
+
     public static function getValue(ConstFetch|String_|ClassConstFetch|ArrayItem|Const_ $node): mixed
     {
         /** @var mixed $node */
