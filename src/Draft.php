@@ -20,7 +20,6 @@ use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Model as IlluminateModel;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Str;
-use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Parser;
@@ -73,8 +72,9 @@ final class Draft extends NodeVisitorAbstract implements DraftInterface
         $this->models[UserInterface::class] = new class($user) implements UserInterface {
             private ?MigrationInterface $migration = null;
 
-            public function __construct(IlluminateModel $model)
-            {
+            public function __construct(
+                private IlluminateModel $model
+            ) {
                 //
             }
 
@@ -90,7 +90,7 @@ final class Draft extends NodeVisitorAbstract implements DraftInterface
 
             public function namespace(): string
             {
-                return '';
+                return $this->model->getQualifiedKeyName();
             }
 
             public function table(): string
@@ -232,7 +232,7 @@ final class Draft extends NodeVisitorAbstract implements DraftInterface
 
     public function modelPath(): string
     {
-        return app()->basePath('app/Models');
+        return base_path('app/Models');
     }
 
     public function models(): array
