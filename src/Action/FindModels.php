@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Ghostwriter\Draft\Action;
 
 use Generator;
+use Ghostwriter\Draft\ClassMap;
 use Ghostwriter\Draft\Draft;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use PhpParser\Node;
-use PhpParser\Node\Param;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassConst;
@@ -23,16 +23,9 @@ use PhpParser\NodeVisitor\NameResolver;
 final class FindModels
 {
     /**
-     * @var array<Node>
+     * @var array<string,array<string,array<string,Stmt>>>
      */
     private array $models = [];
-
-    private NodeExtractor $nodeNameResolver;
-
-    public function __construct()
-    {
-        $this->nodeNameResolver = new NodeExtractor();
-    }
 
     /**
      * @throws FileNotFoundException
@@ -40,7 +33,7 @@ final class FindModels
      * @return Generator<string,array<Stmt>>
      *
      */
-    public function __invoke(Draft $draft, Filesystem $filesystem): Generator
+    public function __invoke(Draft $draft, Filesystem $filesystem, ClassMap $classMap): Generator
     {
         $traverser = new NodeTraverser();
         $nameResolver = new NameResolver();
@@ -60,15 +53,17 @@ final class FindModels
                 $classes = $nodeFinder->findInstanceOf($model, Class_::class);
                 foreach ($classes as $class) {
                     $className = NodeExtractor::getName($class);
+                    $classMap->addClass($className, $path);
 
-                    $this->models[$path][$className]['const'] = array_reduce(
+                    $classConst = $this->models[$path][$className]['const'] = array_reduce(
                         $nodeFinder->findInstanceOf($class, ClassConst::class),
                         static fn (array $carry, ClassConst $constant): array =>
                             array_merge($carry, NodeExtractor::getConsts($constant)),
                         []
                     );
+                    $classMap->addClassConsts($classConst, $className, $path);
 
-                    $this->models[$path][$className]['method'] = array_reduce(
+                    $classMethod = $this->models[$path][$className]['method'] = array_reduce(
                         $nodeFinder->findInstanceOf($class, ClassMethod::class),
                         static fn (array $carry, ClassMethod $method) =>
                             array_merge(
@@ -79,8 +74,9 @@ final class FindModels
                             ),
                         []
                     );
+                    $classMap->addClassMethods($classMethod, $className, $path);
 
-                    $this->models[$path][$className]['property'] = array_reduce(
+                    $classProperty = $this->models[$path][$className]['property'] = array_reduce(
                         $nodeFinder->findInstanceOf($class, Property::class),
                         static fn (array $carry, Property $property): array =>
                             array_merge(
@@ -100,11 +96,13 @@ final class FindModels
                             ),
                         []
                     );
+                    $classMap->addClassProperties($classProperty, $className, $path);
                 }
             }
         }
 
-        yield from $this->models;
+        //        yield from $this->models;
+        yield $classMap;
     }
 
     /**
@@ -113,17 +111,5 @@ final class FindModels
     public function getModels(): array
     {
         return $this->models;
-    }
-
-    public static function getProps(ClassMethod $node): array
-    {
-        return array_reduce(
-            $node->props,
-            static fn (array $carry, Param $param): array =>
-            array_merge($carry, [
-                self::getVar($param) => self::getDefault($param),
-            ]),
-            []
-        );
     }
 }
