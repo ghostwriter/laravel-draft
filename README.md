@@ -78,7 +78,8 @@ php artisan draft:trace
 ### Draft file: `draft.php`
 
 ```php
-// Note: Some syntax below is currently pseudocode, I'm cleaning it up and building an API.
+// Note: Some if not most of the syntax below is currently pseudocode, I'm cleaning it up and building an API.
+
 // ./draft.php
 <?php
 
@@ -252,6 +253,9 @@ return static function (Draft $draft): void {
         $draft->seeders(),
     ]);
 };
+
+
+// NOTE: please ignore the braindump below.
 
 //declare()
 \Ghostwriter\Draft\ClassMap::class
