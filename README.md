@@ -252,6 +252,36 @@ return static function (Draft $draft): void {
         $draft->seeders(),
     ]);
 };
+
+//declare()
+\Ghostwriter\Draft\ClassMap::class
+
+ClassMap
+->find
+->get
+->has
+->set
+->unset
+
+
+- path
+- name
+    - namespace
+        - declaration
+            - use
+            - declare
+            - variable
+        - class
+            - Members
+                - constant
+                - function/methods
+                - property
+        - constant
+        - function
+
+
+
+
 ```
 
 ## Testing
