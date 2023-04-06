@@ -7,13 +7,15 @@ namespace Ghostwriter\Draft\Command;
 use Closure;
 use Ghostwriter\Draft\Action\FindControllers;
 use Ghostwriter\Draft\Action\FindModels;
+use Ghostwriter\Draft\ClassMap;
 use Ghostwriter\Draft\Draft;
 use Illuminate\Console\Command;
 use Illuminate\Console\GeneratorCommand;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Filesystem\Filesystem;
 use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\Class_;
+use function floor;
+use function log;
 
 final class TraceCommand extends GeneratorCommand
 {
@@ -30,6 +32,18 @@ final class TraceCommand extends GeneratorCommand
         parent::__construct($this->filesystem);
     }
 
+    public function convert(float|int $size): string
+    {
+        $i = floor(log($size, 1024));
+        return sprintf(
+            '%s %s',
+            0 === $size ?
+                0 :
+                round($size / (1024 ** $i), 2),
+            ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'][$i]
+        );
+    }
+
     /**
      * Execute the console command.
      *
@@ -37,67 +51,27 @@ final class TraceCommand extends GeneratorCommand
      */
     public function handle(): int
     {
-        // Ask laravel where to find the model/controller/migrations/factories/seeders/formRequests/Notification dir
-
-        [$models, $timeAndMemory_0] = $this->bench(fn () => ($this->findModels)($this->draft, $this->filesystem));
-
-        [$controllers, $timeAndMemory_1] = $this->bench(
-            fn () => ($this->findControllers)($this->draft, $this->filesystem)
+        $classMap = new ClassMap();
+        collect([
+            'Tracing models' => fn (): bool =>
+                [] !== dump(iterator_to_array(($this->findModels)($this->draft, $this->filesystem, $classMap))),
+            'Tracing controllers' => fn (): bool =>
+                [] !== dump(iterator_to_array(($this->findControllers)($this->draft, $this->filesystem, $classMap))),
+        ])->each(
+            fn (Closure $task, string $description): array =>
+                $this->bench(fn () => $this->components->task($description, $task))
         );
 
-        //        $dump = [];
-        //        [,$testMem] = $this->bench(function () use ($dump) {
-        //            foreach (range(0, 100000) as $index){
-        //                $dump[$index] = time();
-        //            }
-        //            return $dump;
-        //        });
-        dd([
-            iterator_to_array($models),
-            iterator_to_array($controllers),
+        return self::SUCCESS;
 
-            $timeAndMemory_0,
-            $timeAndMemory_1,
-            //    $testMem ?? null
-        ]);
-        die;
-        //         =
-
-        /** @var array<Class_> $classes */
-        dd([
-            $models,
-            array_keys($models),
-            //            array_values($models),
-            //$this->draft->traverse($models[array_key_last($models)]),
-
-            //            $this->qualifyClass($model),
-            //            $this->qualifyModel($model),
-            //$this->rootNamespace()
-            //
-            //            iterator_to_array($findModels($this->draft, $this->filesystem)),
-            //            iterator_to_array($findControllers($this->draft, $this->filesystem)),
-            //            //            $this->filesystem->files(app()->databasePath('app/models')),
-            //            //        ??
-            //            app()
-            //                ->getNamespace(), // "app" or "custom if changed by user"
-            //            app()
-            //                ->getNamespace() . 'Actions',
-            //            app()
-            //                ->getNamespace() . 'Models',
-            //            app()
-            //                ->getNamespace() . 'Events',
-            //            app()
-            //                ->getNamespace() . 'Policies',
-            //            app()
-            //                ->getNamespace() . 'Views',
-            //            app()
-            //                ->getNamespace() . 'Http\\Controllers',
-            //
-            //            //            app()->basePath('Model'),
-            //            app()->databasePath()
-        ]);
-
-        //        \Illuminate\Foundation\Application::class;
+        // Ask laravel where to find the model/controller/migrations/factories/seeders/formRequests/Notification dir
+        //        dump([
+        ////            iterator_to_array($models),
+        ////            iterator_to_array($controllers),
+        ////            $timeAndMemory_0,
+        ////            $timeAndMemory_1,
+        //            $testMem ?? 'testMem',
+        //        ]);
 
         // Using PHP parser load each of the file paths/classNames in to a classmap
 
@@ -105,53 +79,56 @@ final class TraceCommand extends GeneratorCommand
 
         // User can enable/disable a "criteria/strategy" in `config/draft.php`
 
+        //            array_values($models),
+        //$this->draft->traverse($models[array_key_last($models)]),
+
+        //            $this->qualifyClass($model),
+        //            $this->qualifyModel($model),
+        //$this->rootNamespace()
         //
-        //        $models =
-        //        iterator_to_array((new FindModels($this->draft, $this->filesystem))());
-        //        $controllers =
-        //        iterator_to_array((new FindControllers($this->draft, $this->filesystem))());
-
-        //            $this->callSilently('queue:monitor', []);
-
-        //        dd(app()->getNamespace());
-        //        dump([$models, $controllers]);
-
-        //        return self::SUCCESS;
-
-        // dd($this->draft);
-        //        $controllers = collect($this->filesystem->files(app()->basePath('app/http/controllers')))
-        //            ->map->getPathname();
+        //            iterator_to_array($findModels($this->draft, $this->filesystem)),
+        //            iterator_to_array($findControllers($this->draft, $this->filesystem)),
+        //            //            $this->filesystem->files(app()->databasePath('app/models')),
+        //            //        ??
+        //            app()
+        //                ->getNamespace(), // "app" or "custom if changed by user"
+        //            app()
+        //                ->getNamespace() . 'Actions',
+        //            app()
+        //                ->getNamespace() . 'Models',
+        //            app()
+        //                ->getNamespace() . 'Events',
+        //            app()
+        //                ->getNamespace() . 'Policies',
+        //            app()
+        //                ->getNamespace() . 'Views',
+        //            app()
+        //                ->getNamespace() . 'Http\\Controllers',
         //
-        //        $formRequests = collect($this->filesystem->files(app()->basePath('app/http/requests')))
-        //            ->map->getPathname();
-
-        //        $models = $filesystem->files(app()->databasePath('app/models'));
-        //        dump([
-        //            'it works!',
-        //            //            app()->basePath('app/models'),
-        //            $models,
-        //            $controllers,
-        //            $formRequests,
-        //            //            app()->configPath(),
-        //            //            app()->databasePath(),
-        //            //            app()->resourcePath(),
-        //        ]);
-
-        return self::SUCCESS;
+        //            //            app()->basePath('Model'),
+        //            app()->databasePath()
     }
 
     protected function bench(Closure $fn): array
     {
-        $start = -hrtime(true)/1e+6;
+        $start = -hrtime(true);
         $memoryStart = -memory_get_usage(true);
 
         /** @var array<Stmt> $result */
         $result = $fn();
 
-        $end = hrtime(true)/1e+6;
+        $end = hrtime(true);
         $memoryEnd = memory_get_usage(true);
 
-        return [$result, sprintf('Time: %f - Memory: %s', $start + $end, $memoryEnd + $memoryStart)];
+        $status = sprintf(
+            'Time: %f secs. - Memory: %s',
+            ($start + $end)/1E+9,
+            self::convert($memoryEnd + $memoryStart)
+        );
+
+        $this->components->info($status);
+
+        return [$result, $status];
     }
 
     protected function getStub(): void
